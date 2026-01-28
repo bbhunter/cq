@@ -8,9 +8,23 @@ import datetime
 
 def skip_file(fname):
     import cq
-    global ns
+    global ns, exclusions, outdir
+    
+    # Always skip the output directory to prevent scanning our own output files
+    if outdir and os.path.commonpath([os.path.abspath(fname), os.path.abspath(outdir)]) == os.path.abspath(outdir):
+        return True
+    
     if ns:
+        # Still check exclusions even if ns is True
+        for exclude_name in exclusions:
+            if exclude_name in fname.split('/'):
+                return True
         return False
+
+    # Check exclusion list (name-based, not regex)
+    for exclude_name in exclusions:
+        if exclude_name in fname.split('/'):
+            return True
 
     for skip in cq.SKIP_DIRS:
         if skip.search(fname):
@@ -411,6 +425,7 @@ sc = False
 print_progress = False
 re_checks = '.*'
 outdir = '/tmp/'  # Note - this is always set to something else, but - just in case it isn't, put output in /tmp.
+exclusions = []  # List of directory/file names to exclude (not regex patterns)
 
 
 def do_main():

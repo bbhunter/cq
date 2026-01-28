@@ -2,6 +2,8 @@
 
 import signal
 import sys
+import os
+import argparse
 import fn
 import regex
 
@@ -747,7 +749,115 @@ def signal_handler(sig, frame):  # noqa
 
 def main():
     signal.signal(signal.SIGINT, signal_handler)
-    fn.do_main()
+    
+    parser = argparse.ArgumentParser(
+        description='cq.py : Universal SAST Tool [ By Chris Anley ]',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  cq.py output_dir                           # Basic scan
+  cq.py -c "php" output_dir                  # Only run PHP checks
+  cq.py -a -vv output_dir                    # Check all files with verbose output
+  cq.py -ns -sa -vvv output_dir              # No skip, scan all files, very verbose
+  cq.py -x node_modules -x .git output_dir   # Exclude specific directories by name
+  cq.py -x build -x dist -x venv output_dir  # Multiple exclusions
+        '''
+    )
+    
+    parser.add_argument(
+        'output_dir',
+        help='Output directory for scan results'
+    )
+    
+    parser.add_argument(
+        '-a', '--all',
+        action='store_true',
+        help='Check all files, including binaries (i.e. files containing invalid utf-8 chars)'
+    )
+    
+    parser.add_argument(
+        '-c', '--checks',
+        type=str,
+        default='.*',
+        metavar='REGEX',
+        help='Only run checks matching the regex (default: .* runs all checks)'
+    )
+    
+    parser.add_argument(
+        '-p', '--progress',
+        action='store_true',
+        help='Print progress'
+    )
+    
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Quite verbose'
+    )
+    verbosity.add_argument(
+        '-vv',
+        action='store_true',
+        help='Annoyingly verbose'
+    )
+    verbosity.add_argument(
+        '-vvv',
+        action='store_true',
+        help='Pointlessly verbose'
+    )
+    
+    parser.add_argument(
+        '-ns', '--no-skip',
+        action='store_true',
+        help='No skip: don\'t skip files/directories that are irrelevant, like test, /vendor/, /node_modules/, .zip etc'
+    )
+    
+    parser.add_argument(
+        '-sa', '--scan-all',
+        action='store_true',
+        help='Scan all files, not just recommended/code files'
+    )
+    
+    parser.add_argument(
+        '-sc', '--scan-code',
+        action='store_true',
+        help='Scan all code files for all bugs, i.e. not just python bugs in python files'
+    )
+    
+    parser.add_argument(
+        '-x', '--exclude',
+        type=str,
+        action='append',
+        metavar='NAME',
+        help='Exclude directories or files by name (not regex). Can be used multiple times (e.g., -x node_modules -x .git)'
+    )
+    
+    args = parser.parse_args()
+    
+    # Set global variables in fn module based on parsed arguments
+    fn.a = args.all or args.scan_all or args.scan_code
+    fn.v = args.verbose or args.vv or args.vvv
+    fn.vv = args.vv or args.vvv
+    fn.vvv = args.vvv
+    fn.ns = args.no_skip or args.all
+    fn.sa = args.scan_all or args.all
+    fn.sc = args.scan_code or args.all
+    fn.print_progress = args.progress
+    fn.re_checks = args.checks
+    fn.outdir = args.output_dir
+    
+    # Handle exclusions
+    if args.exclude:
+        fn.exclusions = args.exclude
+    
+    # Create output directory if it doesn't exist
+    try:
+        os.makedirs(fn.outdir)
+    except FileExistsError:
+        print("Outdir exists")
+    
+    print("Starting")
+    fn.do_checks(regex.compile(fn.re_checks))
 
 
 if __name__ == "__main__":
