@@ -209,6 +209,31 @@ def do_line_custom_check(check, fname, line, line_num):
 
 def global_run_tool(out_fname, arg):
     cmd = arg.format(out_fname=out_fname)
+    
+    if exclusions:
+        # Add exclusions to semgrep commands
+        if 'semgrep' in cmd and '`pwd`' in cmd:
+            exclude_args = ' '.join([f'--exclude="{exc}"' for exc in exclusions])
+            cmd = cmd.replace('`pwd`', f'{exclude_args} `pwd`')
+        
+        # Add exclusions to cloc commands
+        elif 'cloc' in cmd:
+            exclude_args = ' --exclude-list-file='.join([f'{exc},' for exc in exclusions])[:-1] # Remove trailing comma
+            # Insert after 'cloc' and before other arguments
+            cmd = cmd.replace('cloc ', f'cloc {exclude_args} ')
+        
+        # Add exclusions to clamscan commands
+        elif 'clamscan' in cmd:
+            exclude_args = ' '.join([f'--exclude="{exc}"' for exc in exclusions])
+            # Insert after 'clamscan' and before other arguments
+            cmd = cmd.replace('clamscan ', f'clamscan {exclude_args} ')
+        
+        # Add exclusions to bandit commands
+        elif 'bandit' in cmd:
+            exclude_args = ' -x'.join([f'{exc},' for exc in exclusions])[:-1] # Remove trailing comma
+            # Insert after 'bandit' and before other arguments
+            cmd = cmd.replace('bandit ', f'bandit {exclude_args} ')
+    
     os.system(cmd)
 
 
