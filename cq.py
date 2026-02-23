@@ -2,6 +2,8 @@
 
 import signal
 import sys
+import os
+import argparse
 import fn
 import regex
 
@@ -90,37 +92,37 @@ GLOBAL_CHECKS = [
     ('tool_nsp', fn.global_run_tool, 'find . -name package.json | while read i; do dirname $i; done | while read j; do echo PROJECT: $j; nsp check $j --reporter summary; done  >> "{out_fname}" 2>/dev/null ; find "{out_fname}" -size 0 -delete &'),
     ('tool_eslint', fn.global_run_tool, 'eslint . >> "{out_fname}" 2>/dev/null ; find "{out_fname}" -size 0 -delete &'),
 
-    ('semgrep-apex', fn.global_run_tool, '(semgrep -c r/apex "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)&'),
-    ('semgrep-bash', fn.global_run_tool, '(semgrep -c r/bash "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)&'),
-    ('semgrep-c', fn.global_run_tool, '(semgrep -c r/c "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)&'),
-    ('semgrep-clojure', fn.global_run_tool, '(semgrep -c r/clojure "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)&'),
-    ('semgrep-cs', fn.global_run_tool, '(semgrep -c r/csharp "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-docker', fn.global_run_tool, '(semgrep -c r/dockerfile "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-elixir', fn.global_run_tool, '(semgrep -c r/elixir "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-fingerprints', fn.global_run_tool, '(semgrep -c r/fingerprints "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-generic', fn.global_run_tool, '(semgrep -c r/generic "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-go', fn.global_run_tool, '(semgrep -c r/go "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-html', fn.global_run_tool, '(semgrep -c r/html "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-java', fn.global_run_tool, '(semgrep -c r/java "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-js', fn.global_run_tool, '(semgrep -c r/javascript "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-json', fn.global_run_tool, '(semgrep -c r/json "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-kotlin', fn.global_run_tool, '(semgrep -c r/kotlin "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-libsonnet', fn.global_run_tool, '(semgrep -c r/libsonnet "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-ocaml', fn.global_run_tool, '(semgrep -c r/ocaml "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-php', fn.global_run_tool, '(semgrep -c r/php "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-probs', fn.global_run_tool, '(semgrep -c r/problem-based-packs "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-py', fn.global_run_tool, '(semgrep -c r/python "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-rb', fn.global_run_tool, '(semgrep -c r/ruby "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-rust', fn.global_run_tool, '(semgrep -c r/rust "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-scala', fn.global_run_tool, '(semgrep -c r/scala "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-scripts', fn.global_run_tool, '(semgrep -c r/scripts "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-solidity', fn.global_run_tool, '(semgrep -c r/solidity "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-stats', fn.global_run_tool, '(semgrep -c r/stats "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-swift', fn.global_run_tool, '(semgrep -c r/swift "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-terraform', fn.global_run_tool, '(semgrep -c r/terraform "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-trusted_python.txt', fn.global_run_tool, '(semgrep -c r/trusted_python "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-ts', fn.global_run_tool, '(semgrep -c r/typescript "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
-    ('semgrep-yaml', fn.global_run_tool, '(semgrep -c r/yaml "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)  &')
+    ('semgrep-apex', fn.global_run_tool, '(semgrep --metrics=off -c r/apex "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)&'),
+    ('semgrep-bash', fn.global_run_tool, '(semgrep --metrics=off -c r/bash "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)&'),
+    ('semgrep-c', fn.global_run_tool, '(semgrep --metrics=off -c r/c "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)&'),
+    ('semgrep-clojure', fn.global_run_tool, '(semgrep --metrics=off -c r/clojure "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)&'),
+    ('semgrep-cs', fn.global_run_tool, '(semgrep --metrics=off -c r/csharp "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-docker', fn.global_run_tool, '(semgrep --metrics=off -c r/dockerfile "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-elixir', fn.global_run_tool, '(semgrep --metrics=off -c r/elixir "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-fingerprints', fn.global_run_tool, '(semgrep --metrics=off -c r/fingerprints "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-generic', fn.global_run_tool, '(semgrep --metrics=off -c r/generic "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-go', fn.global_run_tool, '(semgrep --metrics=off -c r/go "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-html', fn.global_run_tool, '(semgrep --metrics=off -c r/html "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-java', fn.global_run_tool, '(semgrep --metrics=off -c r/java "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-js', fn.global_run_tool, '(semgrep --metrics=off -c r/javascript "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-json', fn.global_run_tool, '(semgrep --metrics=off -c r/json "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-kotlin', fn.global_run_tool, '(semgrep --metrics=off -c r/kotlin "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-libsonnet', fn.global_run_tool, '(semgrep --metrics=off -c r/libsonnet "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-ocaml', fn.global_run_tool, '(semgrep --metrics=off -c r/ocaml "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-php', fn.global_run_tool, '(semgrep --metrics=off -c r/php "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-probs', fn.global_run_tool, '(semgrep --metrics=off -c r/problem-based-packs "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-py', fn.global_run_tool, '(semgrep --metrics=off -c r/python "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-rb', fn.global_run_tool, '(semgrep --metrics=off -c r/ruby "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-rust', fn.global_run_tool, '(semgrep --metrics=off -c r/rust "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-scala', fn.global_run_tool, '(semgrep --metrics=off -c r/scala "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-scripts', fn.global_run_tool, '(semgrep --metrics=off -c r/scripts "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-solidity', fn.global_run_tool, '(semgrep --metrics=off -c r/solidity "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-stats', fn.global_run_tool, '(semgrep --metrics=off -c r/stats "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-swift', fn.global_run_tool, '(semgrep --metrics=off -c r/swift "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-terraform', fn.global_run_tool, '(semgrep --metrics=off -c r/terraform "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-trusted_python.txt', fn.global_run_tool, '(semgrep --metrics=off -c r/trusted_python "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-ts', fn.global_run_tool, '(semgrep --metrics=off -c r/typescript "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete ) &'),
+    ('semgrep-yaml', fn.global_run_tool, '(semgrep --metrics=off -c r/yaml "`pwd`" --text-output="{out_fname}" >/dev/null 2>/dev/null ; find "{out_fname}" -size 0 -delete)  &')
 ]
 
 GLOBAL_POST_CHECKS = [
@@ -747,7 +749,115 @@ def signal_handler(sig, frame):  # noqa
 
 def main():
     signal.signal(signal.SIGINT, signal_handler)
-    fn.do_main()
+    
+    parser = argparse.ArgumentParser(
+        description='cq.py : Universal SAST Tool [ By Chris Anley ]',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  cq.py output_dir                           # Basic scan
+  cq.py -c "php" output_dir                  # Only run PHP checks
+  cq.py -a -vv output_dir                    # Check all files with verbose output
+  cq.py -ns -sa -vvv output_dir              # No skip, scan all files, very verbose
+  cq.py -x node_modules -x .git output_dir   # Exclude specific directories by name
+  cq.py -x build -x dist -x venv output_dir  # Multiple exclusions
+        '''
+    )
+    
+    parser.add_argument(
+        'output_dir',
+        help='Output directory for scan results'
+    )
+    
+    parser.add_argument(
+        '-a', '--all',
+        action='store_true',
+        help='Check all files, including binaries (i.e. files containing invalid utf-8 chars)'
+    )
+    
+    parser.add_argument(
+        '-c', '--checks',
+        type=str,
+        default='.*',
+        metavar='REGEX',
+        help='Only run checks matching the regex (default: .* runs all checks)'
+    )
+    
+    parser.add_argument(
+        '-p', '--progress',
+        action='store_true',
+        help='Print progress'
+    )
+    
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Quite verbose'
+    )
+    verbosity.add_argument(
+        '-vv',
+        action='store_true',
+        help='Annoyingly verbose'
+    )
+    verbosity.add_argument(
+        '-vvv',
+        action='store_true',
+        help='Pointlessly verbose'
+    )
+    
+    parser.add_argument(
+        '-ns', '--no-skip',
+        action='store_true',
+        help='No skip: don\'t skip files/directories that are irrelevant, like test, /vendor/, /node_modules/, .zip etc'
+    )
+    
+    parser.add_argument(
+        '-sa', '--scan-all',
+        action='store_true',
+        help='Scan all files, not just recommended/code files'
+    )
+    
+    parser.add_argument(
+        '-sc', '--scan-code',
+        action='store_true',
+        help='Scan all code files for all bugs, i.e. not just python bugs in python files'
+    )
+    
+    parser.add_argument(
+        '-x', '--exclude',
+        type=str,
+        action='append',
+        metavar='NAME',
+        help='Exclude directories or files by name (not regex). Can be used multiple times (e.g., -x node_modules -x .git)'
+    )
+    
+    args = parser.parse_args()
+    
+    # Set global variables in fn module based on parsed arguments
+    fn.a = args.all or args.scan_all or args.scan_code
+    fn.v = args.verbose or args.vv or args.vvv
+    fn.vv = args.vv or args.vvv
+    fn.vvv = args.vvv
+    fn.ns = args.no_skip or args.all
+    fn.sa = args.scan_all or args.all
+    fn.sc = args.scan_code or args.all
+    fn.print_progress = args.progress
+    fn.re_checks = args.checks
+    fn.outdir = args.output_dir
+    
+    # Handle exclusions
+    if args.exclude:
+        fn.exclusions = args.exclude
+    
+    # Create output directory if it doesn't exist
+    try:
+        os.makedirs(fn.outdir)
+    except FileExistsError:
+        print("Outdir exists")
+    
+    print("Starting")
+    fn.do_checks(regex.compile(fn.re_checks))
 
 
 if __name__ == "__main__":

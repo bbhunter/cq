@@ -8,9 +8,23 @@ import datetime
 
 def skip_file(fname):
     import cq
-    global ns
+    global ns, exclusions, outdir
+    
+    # Always skip the output directory to prevent scanning our own output files
+    if outdir and os.path.commonpath([os.path.abspath(fname), os.path.abspath(outdir)]) == os.path.abspath(outdir):
+        return True
+    
     if ns:
+        # Still check exclusions even if ns is True
+        for exclude_name in exclusions:
+            if exclude_name in fname.split('/'):
+                return True
         return False
+
+    # Check exclusion list (name-based, not regex)
+    for exclude_name in exclusions:
+        if exclude_name in fname.split('/'):
+            return True
 
     for skip in cq.SKIP_DIRS:
         if skip.search(fname):
@@ -195,6 +209,31 @@ def do_line_custom_check(check, fname, line, line_num):
 
 def global_run_tool(out_fname, arg):
     cmd = arg.format(out_fname=out_fname)
+    
+    if exclusions:
+        # Add exclusions to semgrep commands
+        if 'semgrep' in cmd and '`pwd`' in cmd:
+            exclude_args = ' '.join([f'--exclude="{exc}"' for exc in exclusions])
+            cmd = cmd.replace('`pwd`', f'{exclude_args} `pwd`')
+        
+        # Add exclusions to cloc commands
+        elif 'cloc' in cmd:
+            exclude_args = ' --exclude-list-file='.join([f'{exc},' for exc in exclusions])[:-1] # Remove trailing comma
+            # Insert after 'cloc' and before other arguments
+            cmd = cmd.replace('cloc ', f'cloc {exclude_args} ')
+        
+        # Add exclusions to clamscan commands
+        elif 'clamscan' in cmd:
+            exclude_args = ' '.join([f'--exclude="{exc}"' for exc in exclusions])
+            # Insert after 'clamscan' and before other arguments
+            cmd = cmd.replace('clamscan ', f'clamscan {exclude_args} ')
+        
+        # Add exclusions to bandit commands
+        elif 'bandit' in cmd:
+            exclude_args = ' -x'.join([f'{exc},' for exc in exclusions])[:-1] # Remove trailing comma
+            # Insert after 'bandit' and before other arguments
+            cmd = cmd.replace('bandit ', f'bandit {exclude_args} ')
+    
     os.system(cmd)
 
 
@@ -411,6 +450,7 @@ sc = False
 print_progress = False
 re_checks = '.*'
 outdir = '/tmp/'  # Note - this is always set to something else, but - just in case it isn't, put output in /tmp.
+exclusions = []  # List of directory/file names to exclude (not regex patterns)
 
 
 def do_main():
